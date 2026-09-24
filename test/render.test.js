@@ -295,3 +295,16 @@ test("RIVET-DOM-017 nested reactive templates compose state, computed, condition
     show.value = false;
     assert.equal(section.textContent, "2");
 }));
+
+test("RIVET-DOM-018 native form controls work through properties and events", () => withDom(() => {
+    const value = state("one");
+    let submitted = null;
+    const fragment = render(html`<form onsubmit=${(event) => { event.preventDefault(); submitted = event.currentTarget; }}><input .value=${value} oninput=${(event) => { value.value = event.currentTarget.value; }}></form>`);
+    const form = fragment.querySelector("form");
+    const input = fragment.querySelector("input");
+    input.value = "two";
+    input.dispatchEvent(new Event("input"));
+    assert.equal(value.value, "two");
+    form.dispatchEvent(new Event("submit", { cancelable: true }));
+    assert.equal(submitted, form);
+}));
