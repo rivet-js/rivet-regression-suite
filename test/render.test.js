@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { html, mount, render, state } from "rivet";
+import { html, mount, onCleanup, render, state } from "rivet";
 import { withDom } from "./helpers/dom.js";
 import { Counter } from "../fixtures/counter.mjs";
 
@@ -199,4 +199,16 @@ test("RIVET-COMPONENT-004 reactive children replace their DOM region", () => wit
     const fragment = render(Panel({ children }));
     children.value = html`<em>two</em>`;
     assert.equal(fragment.firstElementChild.outerHTML, "<section><em>two</em></section>");
+}));
+
+test("RIVET-COMPONENT-005 onCleanup releases component-owned resources", () => withDom((document) => {
+    const released = [];
+    function Resource() {
+        return html`${onCleanup(() => released.push("done"))}<p>resource</p>`;
+    }
+    const host = document.createElement("main");
+    const unmount = mount(host, Resource());
+    assert.deepEqual(released, []);
+    unmount();
+    assert.deepEqual(released, ["done"]);
 }));
