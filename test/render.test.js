@@ -377,3 +377,20 @@ test("RIVET-INTEROP-001 native DOM nodes and listeners coexist with Rivet", () =
     assert.equal(outside, 1);
     button.removeEventListener("click", listener);
 }));
+
+test("RIVET-CLEANUP-003 repeated mount/unmount does not retain reactive work", async () => withDom(async (document) => {
+    const { html, mount, state } = await import("rivet");
+    for (let i = 0; i < 100; i++) {
+        const value = state(0);
+        let reads = 0;
+        const host = document.createElement("div");
+        document.body.append(host);
+        const unmount = mount(host, html`<span>${() => { reads++; return value.value; }}</span>`);
+        value.value = 1;
+        const before = reads;
+        unmount();
+        value.value = 2;
+        assert.equal(reads, before);
+        document.body.removeChild(host);
+    }
+}));
