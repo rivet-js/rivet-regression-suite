@@ -114,3 +114,19 @@ test("RIVET-DOM-010 CP20 Counter fixture works end to end", () => withDom(() => 
     assert.match(button.textContent, /Count:\s*1/);
     assert.equal(button.childNodes.includes(dynamicNode), true);
 }));
+
+test("RIVET-DOM-011 nested templates interpolate as DOM", () => withDom(() => {
+    const fragment = render(html`<p>${html`<strong>nested</strong>`}</p>`);
+    assert.equal(fragment.firstElementChild.outerHTML, "<p><strong>nested</strong></p>");
+}));
+
+test("RIVET-DOM-012 reactive DOM regions replace nodes", () => withDom((document) => {
+    const node = document.createElement("span");
+    node.textContent = "one";
+    const current = state(node);
+    const fragment = render(html`<div>${current}</div>`);
+    const div = fragment.firstElementChild;
+    assert.equal(div.outerHTML, "<div><span>one</span></div>");
+    current.value = html`<em>two</em>`;
+    assert.equal(div.outerHTML, "<div><em>two</em></div>");
+}));
