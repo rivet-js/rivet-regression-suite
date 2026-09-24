@@ -78,3 +78,27 @@ test("RIVET-DOM-009 dot bindings assign native DOM properties", () => withDom(()
     value.value = "B";
     assert.equal(input.value, "B");
 }));
+
+test("RIVET-EVENT-001 native click handlers can update reactive state", () => withDom(() => {
+    const count = state(0);
+    const fragment = render(html`<button onclick=${() => count.value++}>Count: ${count}</button>`);
+    const button = fragment.querySelector("button");
+
+    button.dispatchEvent(new Event("click"));
+    assert.equal(button.textContent, "Count: 1");
+}));
+
+test("RIVET-EVENT-002 handler cells replace and remove native listeners", () => withDom(() => {
+    const seen = [];
+    const handler = state(() => seen.push("a"));
+    const fragment = render(html`<button onclick=${handler}>Run</button>`);
+    const button = fragment.querySelector("button");
+
+    button.dispatchEvent(new Event("click"));
+    handler.value = () => seen.push("b");
+    button.dispatchEvent(new Event("click"));
+    handler.value = null;
+    button.dispatchEvent(new Event("click"));
+
+    assert.deepEqual(seen, ["a", "b"]);
+}));
