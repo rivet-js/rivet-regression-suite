@@ -66,3 +66,8 @@ The dynamic UI checkpoint is protected by black-box contracts for:
 - native form properties/events: `RIVET-DOM-018`;
 - class/style attributes: `RIVET-DOM-019`;
 - component lifetime/refs around dynamic regions: `RIVET-COMPONENT-005` through `RIVET-COMPONENT-009`.
+
+
+## Historical bugs
+
+From CP57 onward, every fixed public bug gets a minimal reproduction under `test/history/` when practical and an entry in `BUGS.md`. Stable `RIVET-BUG-YYYY-NNN` IDs make old failures searchable across implementation rewrites.

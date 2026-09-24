@@ -1,0 +1,9 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { /* public APIs only */ } from "rivet";
+
+test("RIVET-BUG-YYYY-NNN short reproduction title", () => {
+    // Arrange the smallest public failure case.
+    // Assert the corrected behaviour.
+    assert.ok(true);
+});
