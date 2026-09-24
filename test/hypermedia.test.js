@@ -82,3 +82,27 @@ test("RIVET-HYPER-006 enhance maps declarative request attributes to the public 
         dispose();
     } finally { globalThis.fetch = previous; }
 }));
+
+test("RIVET-HYPER-007 enhanced forms preserve FormData submission semantics", async () => withDom(async (document) => {
+    const { enhance } = await import("rivet");
+    const form = document.createElement("form");
+    form.setAttribute("r-post", "/save");
+    document.body.append(form);
+    const previousFetch = globalThis.fetch;
+    const previousFormData = globalThis.FormData;
+    const payload = { native: true };
+    globalThis.FormData = class { constructor(value) { assert.equal(value, form); return payload; } };
+    let options;
+    globalThis.fetch = async (_url, next) => { options = next; return new Response(""); };
+    try {
+        enhance(document);
+        const event = new Event("submit", { cancelable: true });
+        form.dispatchEvent(event);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.equal(event.defaultPrevented, true);
+        assert.equal(options.body, payload);
+    } finally {
+        globalThis.fetch = previousFetch;
+        globalThis.FormData = previousFormData;
+    }
+}));
