@@ -176,3 +176,12 @@ test("RIVET-COMPONENT-001 ordinary functions returning html compose as component
     const fragment = render(html`<p>Hello ${Label()}</p>`);
     assert.equal(fragment.firstElementChild.outerHTML, "<p>Hello <strong>Rivet</strong></p>");
 }));
+
+test("RIVET-COMPONENT-002 props are plain JavaScript objects", () => withDom(() => {
+    function Greeting({ name }) { return html`<p>Hello ${name}</p>`; }
+    const name = state("Rivet");
+    const fragment = render(Greeting({ name }));
+    assert.equal(fragment.firstElementChild.textContent, "Hello Rivet");
+    name.value = "Web";
+    assert.equal(fragment.firstElementChild.textContent, "Hello Web");
+}));
