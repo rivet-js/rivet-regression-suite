@@ -308,3 +308,14 @@ test("RIVET-DOM-018 native form controls work through properties and events", ()
     form.dispatchEvent(new Event("submit", { cancelable: true }));
     assert.equal(submitted, form);
 }));
+
+test("RIVET-DOM-019 class and style use ordinary dynamic attributes", () => withDom(() => {
+    const active = state(false);
+    const size = state(12);
+    const fragment = render(html`<div class=${() => active.value ? "active" : "idle"} style=${() => `font-size:${size.value}px`}></div>`);
+    const div = fragment.querySelector("div");
+    active.value = true;
+    size.value = 18;
+    assert.equal(div.getAttribute("class"), "active");
+    assert.equal(div.getAttribute("style"), "font-size:18px");
+}));
