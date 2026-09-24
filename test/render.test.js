@@ -185,3 +185,18 @@ test("RIVET-COMPONENT-002 props are plain JavaScript objects", () => withDom(() 
     name.value = "Web";
     assert.equal(fragment.firstElementChild.textContent, "Hello Web");
 }));
+
+test("RIVET-COMPONENT-003 children compose through an ordinary props field", () => withDom(() => {
+    function Panel({ children }) { return html`<section>${children}</section>`; }
+    function Label() { return html`<strong>child</strong>`; }
+    const fragment = render(Panel({ children: Label() }));
+    assert.equal(fragment.firstElementChild.outerHTML, "<section><strong>child</strong></section>");
+}));
+
+test("RIVET-COMPONENT-004 reactive children replace their DOM region", () => withDom(() => {
+    function Panel({ children }) { return html`<section>${children}</section>`; }
+    const children = state(html`<span>one</span>`);
+    const fragment = render(Panel({ children }));
+    children.value = html`<em>two</em>`;
+    assert.equal(fragment.firstElementChild.outerHTML, "<section><em>two</em></section>");
+}));
