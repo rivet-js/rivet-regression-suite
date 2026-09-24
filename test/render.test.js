@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { html, mount, onCleanup, render, state } from "rivet";
+import { html, key, mount, onCleanup, render, state } from "rivet";
 import { withDom } from "./helpers/dom.js";
 import { Counter } from "../fixtures/counter.mjs";
 
@@ -264,4 +264,21 @@ test("RIVET-DOM-014 reactive expressions can replace mapped arrays", () => withD
     const fragment = render(html`<div>${() => items.value.map((item) => html`<span>${item}</span>`)}</div>`);
     items.value = [3];
     assert.equal(fragment.firstElementChild.outerHTML, "<div><span>3</span></div>");
+}));
+
+test("RIVET-DOM-015 keyed lists preserve node identity when reordered", () => withDom(() => {
+    const rows = state([key("a", html`<li>A</li>`), key("b", html`<li>B</li>`)]);
+    const fragment = render(html`<ul>${rows}</ul>`);
+    const list = fragment.firstElementChild;
+    const [a, b] = list.childNodes.filter((node) => node.nodeType === 1);
+    rows.value = [key("b", html`<li>B2</li>`), key("a", html`<li>A2</li>`)];
+    assert.deepEqual(list.childNodes.filter((node) => node.nodeType === 1), [b, a]);
+}));
+
+test("RIVET-DOM-016 keyed lists reject duplicate keys", () => withDom(() => {
+    const rows = state([key("a", html`<li>A</li>`)]);
+    render(html`<ul>${rows}</ul>`);
+    assert.throws(() => {
+        rows.value = [key("a", html`<li>A</li>`), key("a", html`<li>duplicate</li>`)];
+    }, /Duplicate key/);
 }));
