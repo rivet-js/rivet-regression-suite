@@ -287,10 +287,19 @@ export function withDom(fn) {
     const previousDocument = globalThis.document;
     const { document } = createDom();
     globalThis.document = document;
-    try {
-        return fn(document);
-    } finally {
+
+    const restore = () => {
         if (previousDocument === undefined) delete globalThis.document;
         else globalThis.document = previousDocument;
+    };
+
+    try {
+        const result = fn(document);
+        if (result && typeof result.then === "function") return result.finally(restore);
+        restore();
+        return result;
+    } catch (error) {
+        restore();
+        throw error;
     }
 }

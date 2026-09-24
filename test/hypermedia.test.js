@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { request, RequestError } from "rivet";
+import { withDom } from "./helpers/dom.js";
 
 async function withFetch(fake, fn) {
     const previous = globalThis.fetch;
@@ -22,3 +23,13 @@ test("RIVET-HYPER-002 non-ok responses throw a public RequestError", async () =>
         await assert.rejects(() => request("/bad"), (error) => error instanceof RequestError && error.status === 400 && error.html === "invalid");
     });
 });
+
+test("RIVET-HYPER-003 request target/swap replaces server-driven fragments", async () => withDom(async (document) => {
+    const previous = globalThis.fetch;
+    globalThis.fetch = async () => new Response("<p>server</p>");
+    try {
+        const host = document.createElement("section");
+        await request("/fragment", { target: host, swap: "inner" });
+        assert.equal(host.outerHTML, "<section><p>server</p></section>");
+    } finally { globalThis.fetch = previous; }
+}));
