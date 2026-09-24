@@ -25,6 +25,10 @@ npm test
 
 After changing the Rivet package metadata, rerun `npm install --no-audit` here if the local package link needs refreshing.
 
+## Regression contract
+
+See [`REGRESSION_CONTRACT.md`](./REGRESSION_CONTRACT.md) for the required coverage rule, stable test IDs, categories, and bug-fix workflow.
+
 ## Fixtures
 
 `fixtures/` holds black-box examples and browser fixtures as public behaviour expands. Fixtures should be minimal and named after the contract they exercise.
