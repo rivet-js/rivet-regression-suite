@@ -5,7 +5,8 @@
   "description": "Independent black-box regression and conformance suite for Rivet.",
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:browser": "node scripts/browser-test.mjs"
   },
   "dependencies": {
     "rivet": "file:../rivet"

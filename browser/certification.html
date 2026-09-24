@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rivet browser certification</title>
+<body data-rivet-browser="running">
+<div id="events"></div>
+<div id="result"></div>
+<form id="form" action="/fallback" method="post" r-post="/save" r-target="#result">
+  <label>Name <input name="name" value="Ada"></label>
+  <button>Save</button>
+</form>
+<script type="module">
+const { enhance, request } = await import(globalThis.__rivetEntry);
+
+function assert(condition, message) {
+    if (!condition) throw new Error(message);
+}
+
+try {
+    const events = [];
+    document.addEventListener("rivet:after-request", () => events.push("after-request"));
+    document.addEventListener("rivet:after-swap", () => events.push("after-swap"));
+
+    const seen = [];
+    window.fetch = async (url, options = {}) => {
+        seen.push({ url: String(url), method: options.method, body: options.body });
+        return new Response("<strong>saved</strong>", { status: 200, headers: { "content-type": "text/html" } });
+    };
+
+    enhance(document);
+    const form = document.querySelector("#form");
+    const swapped = new Promise((resolve) => document.querySelector("#result").addEventListener("rivet:after-swap", resolve, { once: true }));
+    form.requestSubmit();
+    await swapped;
+
+    assert(seen.length === 1, "enhanced form should issue one request");
+    assert(seen[0].method === "POST", "POST method should be preserved");
+    assert(seen[0].body instanceof FormData, "browser form body should be native FormData");
+    assert(seen[0].body.get("name") === "Ada", "FormData should contain successful controls");
+    assert(document.querySelector("#result").innerHTML === "<strong>saved</strong>", `server HTML should swap into target: ${document.querySelector("#result").innerHTML}`);
+    assert(events.join(",") === "after-request,after-swap", "lifecycle events should bubble to document");
+
+    await request("/direct");
+    assert(seen.length === 2, "programmatic request should work in real browser");
+
+    document.body.dataset.rivetBrowser = "pass";
+    document.querySelector("#events").textContent = events.join(",");
+} catch (error) {
+    document.body.dataset.rivetBrowser = "fail";
+    document.body.dataset.error = error?.stack || String(error);
+}
+</script>
+</body>

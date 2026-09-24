@@ -32,3 +32,8 @@ See [`REGRESSION_CONTRACT.md`](./REGRESSION_CONTRACT.md) for the required covera
 ## Fixtures
 
 `fixtures/` holds black-box examples and browser fixtures as public behaviour expands. Fixtures should be minimal and named after the contract they exercise.
+
+
+## Real-browser certification
+
+The fast default `npm test` lane uses the lightweight DOM harness. `npm run test:browser` launches local Chromium against a local HTTP server and certifies browser-only semantics such as native `FormData`, `requestSubmit()`, HTML parsing, and bubbling `CustomEvent`s. Set `CHROMIUM=/path/to/chromium` to override the default `/usr/bin/chromium`.
