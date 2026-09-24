@@ -46,3 +46,15 @@ test("RIVET-EFFECT-003 disposal stops effects and runs cleanup", () => {
 
     assert.deepEqual(events, ["run:0", "cleanup:0", "run:1", "cleanup:1"]);
 });
+
+test("RIVET-EFFECT-007 propagation is synchronous", () => {
+    const count = state(0);
+    let observed = -1;
+    const dispose = effect(() => {
+        observed = count.value;
+    });
+
+    count.value = 7;
+    assert.equal(observed, 7);
+    dispose();
+});
