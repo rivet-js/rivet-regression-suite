@@ -4,6 +4,8 @@
 <body data-rivet-browser="running">
 <div id="events"></div>
 <div id="result"></div>
+<button id="focus-button" type="button" aria-expanded="false">Focus test</button>
+<dialog id="native-dialog"><button type="button">Close</button></dialog>
 <form id="form" action="/fallback" method="post" r-post="/save" r-target="#result">
   <label>Name <input name="name" value="Ada"></label>
   <button>Save</button>
@@ -25,6 +27,17 @@ try {
         seen.push({ url: String(url), method: options.method, body: options.body });
         return new Response("<strong>saved</strong>", { status: 200, headers: { "content-type": "text/html" } });
     };
+
+    const focusButton = document.querySelector("#focus-button");
+    focusButton.focus();
+    assert(document.activeElement === focusButton, "native focus() should remain unchanged");
+    assert(focusButton.getAttribute("aria-expanded") === "false", "ARIA attributes should remain ordinary attributes");
+
+    const dialog = document.querySelector("#native-dialog");
+    dialog.showModal();
+    assert(dialog.open === true, "native dialog.showModal() should work");
+    dialog.close();
+    assert(dialog.open === false, "native dialog.close() should work");
 
     enhance(document);
     const form = document.querySelector("#form");
