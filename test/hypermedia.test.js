@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { request, RequestError } from "rivet";
+import { request, RequestError, swap } from "rivet";
 import { withDom } from "./helpers/dom.js";
 
 async function withFetch(fake, fn) {
@@ -166,3 +166,28 @@ test("RIVET-HYPER-010 re-enhancement does not double-bind existing nodes", async
         stopA();
     } finally { globalThis.fetch = previous; }
 }));
+
+
+test("RIVET-HYPER-011 direct swap certifies every documented placement mode", () => withDom((document) => {
+    const parent = document.createElement("div");
+    const target = document.createElement("section");
+    parent.append(target);
+    swap(target, "<b>inner</b>", "inner");
+    assert.equal(target.outerHTML, "<section><b>inner</b></section>");
+    swap(target, "<i>before</i>", "before");
+    swap(target, "<u>after</u>", "after");
+    assert.equal(parent.outerHTML, "<div><i>before</i><section><b>inner</b></section><u>after</u></div>");
+    swap(target, "<em>outer</em>", "outer");
+    assert.equal(parent.outerHTML, "<div><i>before</i><em>outer</em><u>after</u></div>");
+}));
+
+test("RIVET-HYPER-012 request preserves native fetch options including AbortSignal", async () => {
+    const controller = new AbortController();
+    let seen;
+    await withFetch(async (_url, options) => { seen = options; return new Response(""); }, async () => {
+        await request("/native", { method: "PUT", headers: { "x-test": "yes" }, body: "body", signal: controller.signal });
+    });
+    assert.equal(seen.method, "PUT");
+    assert.equal(seen.body, "body");
+    assert.equal(seen.signal, controller.signal);
+});
