@@ -256,6 +256,15 @@ function parseFragment(markup, document) {
 }
 
 export class TestDocument {
+    constructor() {
+        this.body = new TestElement("body");
+    }
+
+    querySelector(selector) {
+        if (this.body.matches(selector)) return this.body;
+        return this.body.querySelector(selector);
+    }
+
     createElement(tagName) {
         if (String(tagName).toLowerCase() === "template") return new TestTemplateElement(this);
         return new TestElement(tagName);

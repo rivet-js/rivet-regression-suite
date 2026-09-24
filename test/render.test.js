@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { html, render, state } from "rivet";
+import { html, mount, render, state } from "rivet";
 import { withDom } from "./helpers/dom.js";
 import { Counter } from "../fixtures/counter.mjs";
 
@@ -150,4 +150,23 @@ test("RIVET-CLEANUP-002 replaced subtrees release event listeners", () => withDo
     current.value = html`<span>new</span>`;
     oldButton.dispatchEvent(new Event("click"));
     assert.equal(clicks, 0);
+}));
+
+
+test("RIVET-MOUNT-001 mount targets an element and cleans up on unmount", () => withDom((document) => {
+    const host = document.createElement("main");
+    const value = state("one");
+    const unmount = mount(host, html`<p>${value}</p>`);
+    assert.equal(host.textContent, "one");
+    unmount();
+    value.value = "two";
+    assert.equal(host.textContent, "");
+}));
+
+test("RIVET-MOUNT-002 mount accepts a CSS selector", () => withDom((document) => {
+    const host = document.createElement("div");
+    host.setAttribute("id", "app");
+    document.body.append(host);
+    mount("#app", html`<span>ok</span>`);
+    assert.equal(host.textContent, "ok");
 }));
