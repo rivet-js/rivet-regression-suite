@@ -1,0 +1,16 @@
+{
+  "name": "rivet-regression-suite",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Independent black-box regression and conformance suite for Rivet.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "rivet": "file:../rivet"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
