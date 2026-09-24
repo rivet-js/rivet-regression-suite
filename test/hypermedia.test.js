@@ -33,3 +33,28 @@ test("RIVET-HYPER-003 request target/swap replaces server-driven fragments", asy
         assert.equal(host.outerHTML, "<section><p>server</p></section>");
     } finally { globalThis.fetch = previous; }
 }));
+
+test("RIVET-HYPER-004 request/swap lifecycle uses native CustomEvent hooks", async () => withDom(async (document) => {
+    const host = document.createElement("div");
+    const seen = [];
+    for (const name of ["rivet:before-request", "rivet:after-request", "rivet:before-swap", "rivet:after-swap"]) {
+        host.addEventListener(name, (event) => seen.push([name, event.detail]));
+    }
+    const previous = globalThis.fetch;
+    globalThis.fetch = async () => new Response("<p>done</p>");
+    try { await request("/fragment", { target: host }); }
+    finally { globalThis.fetch = previous; }
+    assert.deepEqual(seen.map(([name]) => name), ["rivet:before-request", "rivet:after-request", "rivet:before-swap", "rivet:after-swap"]);
+    assert.equal(seen[0][1].url, "/fragment");
+}));
+
+test("RIVET-HYPER-005 failed requests emit request-error", async () => withDom(async (document) => {
+    const host = document.createElement("div");
+    let error;
+    host.addEventListener("rivet:request-error", (event) => { error = event.detail.error; });
+    const previous = globalThis.fetch;
+    globalThis.fetch = async () => new Response("no", { status: 503 });
+    try { await assert.rejects(() => request("/down", { target: host })); }
+    finally { globalThis.fetch = previous; }
+    assert.equal(error.status, 503);
+}));

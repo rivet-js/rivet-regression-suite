@@ -255,8 +255,9 @@ function parseFragment(markup, document) {
     return root;
 }
 
-export class TestDocument {
+export class TestDocument extends EventTarget {
     constructor() {
+        super();
         this.body = new TestElement("body");
     }
 
