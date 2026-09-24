@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { html, render, state } from "rivet";
 import { withDom } from "./helpers/dom.js";
+import { Counter } from "../fixtures/counter.mjs";
 
 test("RIVET-DOM-001 static templates render normal DOM structure", () => withDom(() => {
     const fragment = render(html`<section><h1>Rivet</h1><p>ordinary HTML</p></section>`);
@@ -101,4 +102,15 @@ test("RIVET-EVENT-002 handler cells replace and remove native listeners", () => 
     button.dispatchEvent(new Event("click"));
 
     assert.deepEqual(seen, ["a", "b"]);
+}));
+
+test("RIVET-DOM-010 CP20 Counter fixture works end to end", () => withDom(() => {
+    const fragment = render(Counter());
+    const button = fragment.querySelector("button");
+    const dynamicNode = button.childNodes.find((node) => node.nodeType === 3 && node.textContent === "0");
+
+    assert.match(button.textContent, /Count:\s*0/);
+    button.dispatchEvent(new Event("click"));
+    assert.match(button.textContent, /Count:\s*1/);
+    assert.equal(button.childNodes.includes(dynamicNode), true);
 }));
