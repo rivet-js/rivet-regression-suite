@@ -46,3 +46,35 @@ test("RIVET-DOM-006 reactive expression functions track their state reads", () =
     count.value = 4;
     assert.equal(fragment.querySelector("output").textContent, "12");
 }));
+
+test("RIVET-DOM-007 attributes update and nullish values remove them", () => withDom(() => {
+    const title = state("first");
+    const fragment = render(html`<div title=${title}></div>`);
+    const div = fragment.querySelector("div");
+
+    title.value = "second";
+    assert.equal(div.getAttribute("title"), "second");
+    title.value = null;
+    assert.equal(div.hasAttribute("title"), false);
+}));
+
+test("RIVET-DOM-008 boolean attributes use presence semantics", () => withDom(() => {
+    const disabled = state(false);
+    const fragment = render(html`<button disabled=${disabled}>Save</button>`);
+    const button = fragment.querySelector("button");
+
+    disabled.value = true;
+    assert.equal(button.hasAttribute("disabled"), true);
+    disabled.value = false;
+    assert.equal(button.hasAttribute("disabled"), false);
+}));
+
+test("RIVET-DOM-009 dot bindings assign native DOM properties", () => withDom(() => {
+    const value = state("A");
+    const fragment = render(html`<input .value=${value}>`);
+    const input = fragment.querySelector("input");
+
+    assert.equal(input.value, "A");
+    value.value = "B";
+    assert.equal(input.value, "B");
+}));
