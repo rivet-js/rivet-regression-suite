@@ -1,5 +1,5 @@
 import { readFile, readdir, mkdtemp, rm } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, posix, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -96,6 +96,7 @@ function cdpClient(wsUrl) {
 
 const profile = await mkdtemp(join(tmpdir(), "rivet-chromium-"));
 const chromium = process.env.CHROMIUM || "/usr/bin/chromium";
+const browserVersion = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
 const child = spawn(chromium, [
     "--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
     "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"
@@ -128,7 +129,7 @@ try {
     }
     cdp.close();
     if (state !== "pass") throw new Error(`Browser certification ${state}${error ? `: ${error}` : ""}`);
-    console.log("Rivet browser certification: PASS (Chromium)");
+    console.log(`Rivet browser certification: PASS (${browserVersion})`);
 } finally {
     child.kill("SIGKILL");
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 150));
