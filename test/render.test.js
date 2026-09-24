@@ -130,3 +130,24 @@ test("RIVET-DOM-012 reactive DOM regions replace nodes", () => withDom((document
     current.value = html`<em>two</em>`;
     assert.equal(div.outerHTML, "<div><em>two</em></div>");
 }));
+
+test("RIVET-CLEANUP-001 replaced subtrees release reactive bindings", () => withDom(() => {
+    const inner = state(1);
+    let reads = 0;
+    const current = state(html`<span>${() => { reads++; return inner.value; }}</span>`);
+    const fragment = render(html`<div>${current}</div>`);
+    assert.equal(reads, 1);
+    current.value = html`<em>done</em>`;
+    inner.value = 2;
+    assert.equal(reads, 1);
+}));
+
+test("RIVET-CLEANUP-002 replaced subtrees release event listeners", () => withDom(() => {
+    let clicks = 0;
+    const current = state(html`<button onclick=${() => clicks++}>old</button>`);
+    const fragment = render(html`<div>${current}</div>`);
+    const oldButton = fragment.querySelector("button");
+    current.value = html`<span>new</span>`;
+    oldButton.dispatchEvent(new Event("click"));
+    assert.equal(clicks, 0);
+}));
