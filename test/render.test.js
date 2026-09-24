@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { html, key, mount, onCleanup, render, state } from "rivet";
+import { computed, html, key, mount, onCleanup, render, state } from "rivet";
 import { withDom } from "./helpers/dom.js";
 import { Counter } from "../fixtures/counter.mjs";
 
@@ -281,4 +281,17 @@ test("RIVET-DOM-016 keyed lists reject duplicate keys", () => withDom(() => {
     assert.throws(() => {
         rows.value = [key("a", html`<li>A</li>`), key("a", html`<li>duplicate</li>`)];
     }, /Duplicate key/);
+}));
+
+test("RIVET-DOM-017 nested reactive templates compose state, computed, conditions and lists", () => withDom(() => {
+    const show = state(true);
+    const rows = state([state("A"), state("B")]);
+    const total = computed(() => rows.value.length);
+    const fragment = render(html`<section><h2>${total}</h2>${() => show.value ? html`<ul>${rows.value.map((row, index) => key(index, html`<li>${row}</li>`))}</ul>` : null}</section>`);
+    const section = fragment.firstElementChild;
+    assert.equal(section.textContent, "2AB");
+    rows.value[1].value = "B+";
+    assert.equal(section.textContent, "2AB+");
+    show.value = false;
+    assert.equal(section.textContent, "2");
 }));
