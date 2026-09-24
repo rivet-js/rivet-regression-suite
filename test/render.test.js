@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { html, render } from "rivet";
+import { html, render, state } from "rivet";
 import { withDom } from "./helpers/dom.js";
 
 test("RIVET-DOM-001 static templates render normal DOM structure", () => withDom(() => {
@@ -25,4 +25,24 @@ test("RIVET-DOM-004 native nodes can be interpolated as one-time values", () => 
     strong.textContent = "native";
     const fragment = render(html`<p>${strong}</p>`);
     assert.equal(fragment.querySelector("strong"), strong);
+}));
+
+test("RIVET-DOM-005 state cells update targeted text bindings", () => withDom(() => {
+    const count = state(0);
+    const fragment = render(html`<p>Count: ${count}</p>`);
+    const paragraph = fragment.querySelector("p");
+    const dynamicNode = paragraph.childNodes[1];
+
+    count.value = 3;
+    assert.equal(paragraph.textContent, "Count: 3");
+    assert.equal(paragraph.childNodes[1], dynamicNode);
+}));
+
+test("RIVET-DOM-006 reactive expression functions track their state reads", () => withDom(() => {
+    const count = state(2);
+    const fragment = render(html`<output>${() => count.value * 3}</output>`);
+
+    assert.equal(fragment.querySelector("output").textContent, "6");
+    count.value = 4;
+    assert.equal(fragment.querySelector("output").textContent, "12");
 }));
