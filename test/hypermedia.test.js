@@ -106,3 +106,63 @@ test("RIVET-HYPER-007 enhanced forms preserve FormData submission semantics", as
         globalThis.FormData = previousFormData;
     }
 }));
+
+test("RIVET-HYPER-008 r-trigger stays a small explicit event set", async () => withDom(async (document) => {
+    const { enhance } = await import("rivet");
+    const input = document.createElement("input");
+    input.setAttribute("r-get", "/filter");
+    input.setAttribute("r-trigger", "change");
+    document.body.append(input);
+    const previous = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = async () => { calls++; return new Response(""); };
+    try {
+        const stop = enhance(document);
+        input.dispatchEvent(new Event("input"));
+        input.dispatchEvent(new Event("change"));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.equal(calls, 1);
+        stop();
+    } finally { globalThis.fetch = previous; }
+}));
+
+test("RIVET-HYPER-009 GET forms encode fields and do not send a body", async () => withDom(async (document) => {
+    const { enhance } = await import("rivet");
+    const form = document.createElement("form");
+    form.setAttribute("r-get", "/search?scope=all");
+    document.body.append(form);
+    const previousFetch = globalThis.fetch;
+    const previousFormData = globalThis.FormData;
+    globalThis.FormData = class { entries() { return [["q", "rivet js"]][Symbol.iterator](); } };
+    let seen;
+    globalThis.fetch = async (url, options) => { seen = { url, options }; return new Response(""); };
+    try {
+        enhance(document);
+        form.dispatchEvent(new Event("submit", { cancelable: true }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.equal(seen.url, "/search?scope=all&q=rivet+js");
+        assert.equal("body" in seen.options, false);
+    } finally {
+        globalThis.fetch = previousFetch;
+        globalThis.FormData = previousFormData;
+    }
+}));
+
+test("RIVET-HYPER-010 re-enhancement does not double-bind existing nodes", async () => withDom(async (document) => {
+    const { enhance } = await import("rivet");
+    const button = document.createElement("button");
+    button.setAttribute("r-get", "/once");
+    document.body.append(button);
+    const previous = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = async () => { calls++; return new Response(""); };
+    try {
+        const stopA = enhance(document);
+        const stopB = enhance(document);
+        button.dispatchEvent(new Event("click"));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.equal(calls, 1);
+        stopB();
+        stopA();
+    } finally { globalThis.fetch = previous; }
+}));
