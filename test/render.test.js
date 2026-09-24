@@ -221,3 +221,34 @@ test("RIVET-COMPONENT-006 ref callbacks expose native nodes and clear on disposa
     unmount();
     assert.equal(seen.at(-1), null);
 }));
+
+test("RIVET-COMPONENT-007 mounted reactive props stop updating after unmount", () => withDom((document) => {
+    function Greeting({ name }) { return html`<p>Hello ${name}</p>`; }
+    const name = state("Rivet");
+    const host = document.createElement("main");
+    const unmount = mount(host, Greeting({ name }));
+    const paragraph = host.querySelector("p");
+    unmount();
+    name.value = "after";
+    assert.equal(paragraph.textContent, "Hello Rivet");
+    assert.equal(host.textContent, "");
+}));
+
+test("RIVET-COMPONENT-008 reactive child replacement disposes child resources", () => withDom(() => {
+    const released = [];
+    const child = state(html`${onCleanup(() => released.push("child"))}<span>one</span>`);
+    const fragment = render(html`<section>${child}</section>`);
+    child.value = html`<em>two</em>`;
+    assert.deepEqual(released, ["child"]);
+    assert.equal(fragment.firstElementChild.textContent, "two");
+}));
+
+test("RIVET-COMPONENT-009 unmount removes component event listeners", () => withDom((document) => {
+    let clicks = 0;
+    const host = document.createElement("main");
+    const unmount = mount(host, html`<button onclick=${() => clicks++}>go</button>`);
+    const button = host.querySelector("button");
+    unmount();
+    button.dispatchEvent(new Event("click"));
+    assert.equal(clicks, 0);
+}));
