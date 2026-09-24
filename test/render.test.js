@@ -170,3 +170,9 @@ test("RIVET-MOUNT-002 mount accepts a CSS selector", () => withDom((document) =>
     mount("#app", html`<span>ok</span>`);
     assert.equal(host.textContent, "ok");
 }));
+
+test("RIVET-COMPONENT-001 ordinary functions returning html compose as components", () => withDom(() => {
+    function Label() { return html`<strong>Rivet</strong>`; }
+    const fragment = render(html`<p>Hello ${Label()}</p>`);
+    assert.equal(fragment.firstElementChild.outerHTML, "<p>Hello <strong>Rivet</strong></p>");
+}));
