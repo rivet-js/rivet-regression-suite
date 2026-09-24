@@ -252,3 +252,16 @@ test("RIVET-COMPONENT-009 unmount removes component event listeners", () => with
     button.dispatchEvent(new Event("click"));
     assert.equal(clicks, 0);
 }));
+
+test("RIVET-DOM-013 arrays from ordinary map calls render as sibling DOM", () => withDom(() => {
+    const items = ["a", "b", "c"];
+    const fragment = render(html`<ul>${items.map((item) => html`<li>${item}</li>`)}</ul>`);
+    assert.equal(fragment.firstElementChild.outerHTML, "<ul><li>a</li><li>b</li><li>c</li></ul>");
+}));
+
+test("RIVET-DOM-014 reactive expressions can replace mapped arrays", () => withDom(() => {
+    const items = state([1, 2]);
+    const fragment = render(html`<div>${() => items.value.map((item) => html`<span>${item}</span>`)}</div>`);
+    items.value = [3];
+    assert.equal(fragment.firstElementChild.outerHTML, "<div><span>3</span></div>");
+}));
