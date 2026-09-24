@@ -58,3 +58,27 @@ test("RIVET-HYPER-005 failed requests emit request-error", async () => withDom(a
     finally { globalThis.fetch = previous; }
     assert.equal(error.status, 503);
 }));
+
+test("RIVET-HYPER-006 enhance maps declarative request attributes to the public engine", async () => withDom(async (document) => {
+    const { enhance } = await import("rivet");
+    const button = document.createElement("button");
+    button.setAttribute("r-get", "/users");
+    button.setAttribute("r-target", "#results");
+    const results = document.createElement("div");
+    results.setAttribute("id", "results");
+    document.body.append(button, results);
+
+    const previous = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+        assert.equal(url, "/users");
+        assert.equal(options.method, "GET");
+        return new Response("<p>Ada</p>");
+    };
+    try {
+        const dispose = enhance(document);
+        button.dispatchEvent(new Event("click"));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.equal(results.outerHTML, '<div id="results"><p>Ada</p></div>');
+        dispose();
+    } finally { globalThis.fetch = previous; }
+}));
