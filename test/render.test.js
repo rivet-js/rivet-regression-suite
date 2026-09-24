@@ -328,3 +328,52 @@ test("RIVET-DOM-020 ordinary ternaries drive reactive conditional regions", () =
     visible.value = true;
     assert.equal(main.outerHTML, "<main><p>shown</p></main>");
 }));
+
+test("RIVET-APP-001 shared state cells synchronize independent components", () => withDom(() => {
+    const count = state(0);
+    function Badge() { return html`<span>${count}</span>`; }
+    function Button() { return html`<button onclick=${() => count.value++}>add</button>`; }
+    const fragment = render(html`${Badge()}${Button()}`);
+    const badge = fragment.querySelector("span");
+    fragment.querySelector("button").dispatchEvent(new Event("click"));
+    assert.equal(badge.textContent, "1");
+}));
+
+test("RIVET-APP-002 keyed rows preserve identity through filter and sort state", () => withDom(() => {
+    const rows = [
+        { id: 1, name: state("Ada") },
+        { id: 2, name: state("Linus") },
+        { id: 3, name: state("Grace") }
+    ];
+    const filter = state("");
+    const ascending = state(true);
+    const visible = () => rows
+        .filter((row) => row.name.value.toLowerCase().includes(filter.value))
+        .toSorted((a, b) => ascending.value ? a.name.value.localeCompare(b.name.value) : b.name.value.localeCompare(a.name.value))
+        .map((row) => key(row.id, html`<li data-id=${row.id}>${row.name}</li>`));
+    const fragment = render(html`<ul>${visible}</ul>`);
+    const ul = fragment.querySelector("ul");
+    assert.equal(ul.textContent, "AdaGraceLinus");
+    const ada = ul.childNodes.find((node) => node.nodeType === 1 && node.getAttribute("data-id") === "1");
+    ascending.value = false;
+    assert.equal(ul.textContent, "LinusGraceAda");
+    assert.equal(ul.childNodes.includes(ada), true);
+    filter.value = "ad";
+    assert.equal(ul.textContent, "Ada");
+}));
+
+test("RIVET-INTEROP-001 native DOM nodes and listeners coexist with Rivet", () => withDom((document) => {
+    const native = document.createElement("strong");
+    native.textContent = "native";
+    const clicks = state(0);
+    const fragment = render(html`<button onclick=${() => clicks.value++}>${native}</button>`);
+    const button = fragment.querySelector("button");
+    let outside = 0;
+    const listener = () => outside++;
+    button.addEventListener("click", listener);
+    button.dispatchEvent(new Event("click"));
+    assert.equal(native.parentNode, button);
+    assert.equal(clicks.value, 1);
+    assert.equal(outside, 1);
+    button.removeEventListener("click", listener);
+}));
