@@ -319,3 +319,12 @@ test("RIVET-DOM-019 class and style use ordinary dynamic attributes", () => with
     assert.equal(div.getAttribute("class"), "active");
     assert.equal(div.getAttribute("style"), "font-size:18px");
 }));
+
+test("RIVET-DOM-020 ordinary ternaries drive reactive conditional regions", () => withDom(() => {
+    const visible = state(false);
+    const fragment = render(html`<main>${() => visible.value ? html`<p>shown</p>` : html`<p>hidden</p>`}</main>`);
+    const main = fragment.firstElementChild;
+    assert.equal(main.textContent, "hidden");
+    visible.value = true;
+    assert.equal(main.outerHTML, "<main><p>shown</p></main>");
+}));

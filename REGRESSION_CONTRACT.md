@@ -54,3 +54,15 @@ For a reported bug:
 ## Failure quality
 
 A failure should make the affected contract obvious from the test name alone. Prefer one contract per test over large scenario tests that obscure the source of a failure.
+
+## CP40 dynamic UI coverage map
+
+The dynamic UI checkpoint is protected by black-box contracts for:
+
+- conditionals: `RIVET-DOM-020`;
+- ordinary arrays/map output: `RIVET-DOM-013` and `RIVET-DOM-014`;
+- keyed identity/reordering: `RIVET-DOM-015` and `RIVET-DOM-016`;
+- nested reactive composition: `RIVET-DOM-017`;
+- native form properties/events: `RIVET-DOM-018`;
+- class/style attributes: `RIVET-DOM-019`;
+- component lifetime/refs around dynamic regions: `RIVET-COMPONENT-005` through `RIVET-COMPONENT-009`.
