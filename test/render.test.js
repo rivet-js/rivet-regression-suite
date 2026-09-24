@@ -212,3 +212,12 @@ test("RIVET-COMPONENT-005 onCleanup releases component-owned resources", () => w
     unmount();
     assert.deepEqual(released, ["done"]);
 }));
+
+test("RIVET-COMPONENT-006 ref callbacks expose native nodes and clear on disposal", () => withDom((document) => {
+    const seen = [];
+    const host = document.createElement("main");
+    const unmount = mount(host, html`<button ref=${(node) => seen.push(node)}>ref</button>`);
+    assert.equal(seen[0], host.querySelector("button"));
+    unmount();
+    assert.equal(seen.at(-1), null);
+}));
