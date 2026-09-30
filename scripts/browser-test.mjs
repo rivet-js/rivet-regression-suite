@@ -1,4 +1,5 @@
 import { readFile, readdir, mkdtemp, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { spawn, execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, posix, relative, resolve } from "node:path";
@@ -103,8 +104,24 @@ function cdpClient(wsUrl) {
     };
 }
 
+function findChromium() {
+    const candidates = [
+        process.env.CHROMIUM,
+        process.env.CHROME_BIN,
+        process.env.CHROMIUM_BIN,
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    ].filter(Boolean);
+    const executable = candidates.find(existsSync);
+    if (executable) return executable;
+    throw new Error("Chromium/Chrome not found; set CHROMIUM, CHROME_BIN, or CHROMIUM_BIN to its executable path");
+}
+
 const profile = await mkdtemp(join(tmpdir(), "rivet-chromium-"));
-const chromium = process.env.CHROMIUM || "/usr/bin/chromium";
+const chromium = findChromium();
 const browserVersion = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
 const child = spawn(chromium, [
     "--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",

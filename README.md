@@ -36,4 +36,4 @@ See [`REGRESSION_CONTRACT.md`](./REGRESSION_CONTRACT.md) for the required covera
 
 ## Real-browser certification
 
-The fast default `npm test` lane uses the lightweight DOM harness. `npm run test:browser` launches local Chromium against a local HTTP server and certifies browser-only semantics such as native `FormData`, `requestSubmit()`, HTML parsing, and bubbling `CustomEvent`s. Set `CHROMIUM=/path/to/chromium` to override the default `/usr/bin/chromium`.
+`npm test` runs the lightweight public-behaviour suite and browser certification. `npm run test:browser` runs the browser lane alone, launching local Chromium to certify native `FormData`, `requestSubmit()`, HTML parsing, and bubbling `CustomEvent`s. The runner checks `CHROMIUM`, `CHROME_BIN`, and `CHROMIUM_BIN` overrides first, then common Linux and macOS executable paths.
