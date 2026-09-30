@@ -4,14 +4,19 @@
 <body data-rivet-browser="running">
 <div id="events"></div>
 <div id="result"></div>
+<table><tbody id="rivet-table"></tbody></table>
 <button id="focus-button" type="button" aria-expanded="false">Focus test</button>
 <dialog id="native-dialog"><button type="button">Close</button></dialog>
 <form id="form" action="/fallback" method="post" r-post="/save" r-target="#result">
   <label>Name <input name="name" value="Ada"></label>
   <button>Save</button>
 </form>
+<script>
+addEventListener("error", event => { document.body.dataset.rivetBrowser = "fail"; document.body.dataset.error = event.error?.stack || event.message || "browser error"; });
+addEventListener("unhandledrejection", event => { document.body.dataset.rivetBrowser = "fail"; document.body.dataset.error = event.reason?.stack || String(event.reason); });
+</script>
 <script type="module">
-const { enhance, request } = await import(globalThis.__rivetEntry);
+const { enhance, request, state, html, key, mount, swap } = await import(globalThis.__rivetEntry);
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -54,6 +59,58 @@ try {
 
     await request("/direct");
     assert(seen.length === 2, "programmatic request should work in real browser");
+
+    // Historical regression: reactive markers inside table sections must survive
+    // the browser's special table parsing rules instead of being foster-parented.
+    const tableRows = state([]);
+    const unmountTable = mount("#rivet-table", html`${() => tableRows.value.map(row => key(row.id, html`<tr data-id=${row.id}><td>${row.label}</td></tr>`))}`);
+    tableRows.value = [{ id: 1, label: "one" }, { id: 2, label: "two" }];
+    assert(document.querySelectorAll("#rivet-table > tr").length === 2, "reactive keyed rows should render directly inside tbody");
+    tableRows.value = tableRows.value.slice().reverse();
+    assert(document.querySelector("#rivet-table > tr")?.dataset.id === "2", "keyed tbody rows should reorder without an invalid insertBefore anchor");
+    unmountTable();
+
+    const literalHost = document.createElement("div");
+    document.body.append(literalHost);
+    const plannerValue = state("ok");
+    mount(literalHost, html`<p>1 < 2 ${plannerValue}</p>`);
+    assert(literalHost.textContent === "1 < 2 ok", "literal less-than text must not corrupt interpolation planning");
+
+    const nestedTemplateHost = document.createElement("div");
+    document.body.append(nestedTemplateHost);
+    mount(nestedTemplateHost, html`<template><span>${plannerValue}</span></template>`);
+    plannerValue.value = "updated";
+    assert(nestedTemplateHost.querySelector("template").content.textContent === "updated", "nested template content must retain reactive descriptors");
+
+    let rawTextRejected = false;
+    try { mount(document.createElement("div"), html`<textarea>${plannerValue}</textarea>`); }
+    catch (error) { rawTextRejected = /unsupported/.test(String(error)); }
+    assert(rawTextRejected, "unsupported raw-text interpolation must fail explicitly");
+
+    const ContextChild = () => html`<circle></circle>`;
+    const htmlAnchor = document.createElement("a");
+    const svgAnchor = document.createElementNS("http://www.w3.org/2000/svg", "a");
+    mount(htmlAnchor, ContextChild());
+    mount(svgAnchor, ContextChild());
+    assert(svgAnchor.firstElementChild.namespaceURI === "http://www.w3.org/2000/svg", "template plans must distinguish HTML and SVG contexts with the same tag name");
+
+    const swapTable = document.createElement("table");
+    const swapBody = document.createElement("tbody");
+    swapTable.append(swapBody);
+    document.body.append(swapTable);
+    swap(swapBody, "<tr><td>contextual</td></tr>");
+    assert(swapBody.firstElementChild?.tagName === "TR", "hypermedia swaps must parse table fragments in target context");
+
+    const outerHost = document.createElement("div");
+    outerHost.innerHTML = '<span id="outer-target">old</span>';
+    document.body.append(outerHost);
+    let outerAfter = null;
+    document.addEventListener("rivet:after-swap", event => {
+        if (event.detail.mode === "outer") outerAfter = event.detail;
+    }, { once: true });
+    const outerTarget = outerHost.firstElementChild;
+    swap(outerTarget, "<strong>new</strong>", "outer");
+    assert(outerAfter?.target === outerTarget, "outer after-swap must bubble with the replaced target in detail");
 
     document.body.dataset.rivetBrowser = "pass";
     document.querySelector("#events").textContent = events.join(",");

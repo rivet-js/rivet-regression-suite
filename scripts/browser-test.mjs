@@ -47,7 +47,16 @@ function visit(key) {
 }
 visit("index.js");
 
-const bootstrap = `<script>\n(() => {\n  const sources = ${JSON.stringify(sources)};\n  const deps = ${JSON.stringify(deps)};\n  const order = ${JSON.stringify(order)};\n  const urls = {};\n  for (const key of order) {\n    let source = sources[key];\n    for (const [specifier, target] of deps[key]) {\n      source = source.split('"' + specifier + '"').join('"' + urls[target] + '"');\n      source = source.split("'" + specifier + "'").join("'" + urls[target] + "'");\n    }\n    urls[key] = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));\n  }\n  globalThis.__rivetEntry = urls['index.js'];\n})();\n<\/script>`;
+const moduleUrls = {};
+for (const key of order) {
+    let source = sources[key];
+    for (const [specifier, target] of deps[key]) {
+        source = source.split('"' + specifier + '"').join('"' + moduleUrls[target] + '"');
+        source = source.split("'" + specifier + "'").join("'" + moduleUrls[target] + "'");
+    }
+    moduleUrls[key] = `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
+}
+const bootstrap = `<script>globalThis.__rivetEntry = ${JSON.stringify(moduleUrls["index.js"])};<\/script>`;
 const fixture = await readFile(resolve(suiteRoot, "browser/certification.html"), "utf8");
 const html = fixture.replace('<script type="module">', `${bootstrap}\n<script type="module">`);
 

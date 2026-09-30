@@ -266,13 +266,30 @@ test("RIVET-DOM-014 reactive expressions can replace mapped arrays", () => withD
     assert.equal(fragment.firstElementChild.outerHTML, "<div><span>3</span></div>");
 }));
 
-test("RIVET-DOM-015 keyed lists preserve node identity when reordered", () => withDom(() => {
-    const rows = state([key("a", html`<li>A</li>`), key("b", html`<li>B</li>`)]);
+test("RIVET-DOM-015 keyed lists preserve node identity and refresh values when reordered", () => withDom(() => {
+    const Row = (label) => html`<li>${label}</li>`;
+    const rows = state([key("a", Row("A")), key("b", Row("B"))]);
     const fragment = render(html`<ul>${rows}</ul>`);
     const list = fragment.firstElementChild;
     const [a, b] = list.childNodes.filter((node) => node.nodeType === 1);
-    rows.value = [key("b", html`<li>B2</li>`), key("a", html`<li>A2</li>`)];
+    rows.value = [key("b", Row("B2")), key("a", Row("A2"))];
     assert.deepEqual(list.childNodes.filter((node) => node.nodeType === 1), [b, a]);
+    assert.equal(list.textContent, "B2A2");
+}));
+
+test("RIVET-PERF-001 retained keyed rows refresh static text and attributes in place", () => withDom(() => {
+    const Row = (id, label) => html`<li data-id=${id}><span>${label}</span></li>`;
+    const rows = state([key("row", Row("1", "before"))]);
+    const fragment = render(html`<ul>${rows}</ul>`);
+    const row = fragment.querySelector("li");
+    const text = row.querySelector("span").firstChild;
+
+    rows.value = [key("row", Row("2", "after"))];
+
+    assert.equal(fragment.querySelector("li"), row);
+    assert.equal(row.querySelector("span").firstChild, text);
+    assert.equal(row.getAttribute("data-id"), "2");
+    assert.equal(row.textContent, "after");
 }));
 
 test("RIVET-DOM-016 keyed lists reject duplicate keys", () => withDom(() => {

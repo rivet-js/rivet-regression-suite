@@ -24,6 +24,10 @@ class TestNode extends EventTarget {
     append(...nodes) {
         for (const input of nodes) {
             const node = typeof input === "string" ? new TestText(input) : input;
+            if (node?.nodeType === 11) {
+                for (const child of [...node.childNodes]) this.append(child);
+                continue;
+            }
             if (node.parentNode) node.parentNode.removeChild(node);
             node.parentNode = this;
             this.childNodes.push(node);
@@ -36,6 +40,10 @@ class TestNode extends EventTarget {
     }
 
     insertBefore(node, reference) {
+        if (node?.nodeType === 11) {
+            for (const child of [...node.childNodes]) this.insertBefore(child, reference);
+            return node;
+        }
         if (node.parentNode) node.parentNode.removeChild(node);
         const index = reference === null ? -1 : this.childNodes.indexOf(reference);
         if (reference !== null && index === -1) throw new Error("Reference node is not a child");
@@ -113,6 +121,18 @@ export class TestText extends TestNode {
     get outerHTML() {
         return escapeText(this.data);
     }
+}
+
+export class TestComment extends TestNode {
+    constructor(data = "") {
+        super(8);
+        this.data = String(data);
+    }
+
+    cloneNode() { return new TestComment(this.data); }
+    get textContent() { return ""; }
+    set textContent(value) { this.data = String(value); }
+    get outerHTML() { return `<!--${this.data}-->`; }
 }
 
 export class TestDocumentFragment extends TestNode {
@@ -224,7 +244,10 @@ function parseFragment(markup, document) {
     while ((match = tokenPattern.exec(markup))) {
         const token = match[0];
         if (!token) continue;
-        if (token.startsWith("<!--")) continue;
+        if (token.startsWith("<!--")) {
+            stack.at(-1).append(document.createComment(token.slice(4, -3)));
+            continue;
+        }
 
         if (token.startsWith("</")) {
             const tag = token.slice(2, -1).trim().toLowerCase();
@@ -273,6 +296,10 @@ export class TestDocument extends EventTarget {
 
     createTextNode(data) {
         return new TestText(data);
+    }
+
+    createComment(data) {
+        return new TestComment(data);
     }
 
     createDocumentFragment() {
